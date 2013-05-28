@@ -3,14 +3,14 @@
 var tool = require('./lib/index.js'),
     async = require('async'),
     fs = require('fs'),
-		argv = require('argv'),
+    argv = require('argv'),
     util = require('util');
 
 var argv_config = argv.option([
-	{	name: 'config-file',
+  { name: 'config-file',
     short: 'f',
-	  type: 'path',
-	  description: 'config file with AWS and Circonus credentials' }
+    type: 'path',
+    description: 'config file with AWS and Circonus credentials' }
 , { name: 'circonus',
     short: 'c',
     type: 'string',
@@ -29,74 +29,74 @@ var args = argv_config.run();
 
 var options;
 if(!args.options["config-file"] || !args.options.circonus) {
-  argv_config.help();
-  process.exit(-1);
+    argv_config.help();
+    process.exit(-1);
 }
 try {
-  options = JSON.parse(fs.readFileSync(args.options["config-file"]));
+    options = JSON.parse(fs.readFileSync(args.options["config-file"]));
 } catch(e) {
-  console.log("Error reading config file: " + args.options["config-file"]);
-  process.exit(-1);
+    console.log("Error reading config file: " + args.options["config-file"]);
+    process.exit(-1);
 }
 if(!args.options.circonus || !options[args.options.circonus]) {
-  console.log(args.options.circonus + " is not a valid circonus config");
-  process.exit(-1);
+    console.log(args.options.circonus + " is not a valid circonus config");
+    process.exit(-1);
 }
 var circonus = new tool.circonus(options[args.options.circonus]);
 
 var aws = null;
 if(args.options.ec2) {
-  aws = new tool.aws(options[args.options.ec2]);
+    aws = new tool.aws(options[args.options.ec2]);
 }
 
 var chef = null;
 if(args.options.privatechef) {
-  chef = new tool.chef(options[args.options.privatechef]);
+    chef = new tool.chef(options[args.options.privatechef]);
 }
 
 function sweep_aws(cb) {
-	aws.find_nodes();
-	aws.on('error', function(err) { cb(err, null); });
-	aws.on('nodes', function(d1, d2) {
-		cb(null, { ips: d1, instances: d2 })
-	});
+    aws.find_nodes();
+    aws.on('error', function(err) { cb(err, null); });
+    aws.on('nodes', function(d1, d2) {
+        cb(null, { ips: d1, instances: d2 })
+    });
 }
 
 function sweep_chef(cb) {
-	chef.find_nodes();
-	chef.on('error', function(err) { cb(err, null); });
-	chef.on('nodes', function(d1, d2) {
-		cb(null, { nodes: d1, ips: d2 });
-	});
+    chef.find_nodes();
+    chef.on('error', function(err) { cb(err, null); });
+    chef.on('nodes', function(d1, d2) {
+        cb(null, { nodes: d1, ips: d2 });
+    });
 }
 
 function sweep_circonus(cb) {
-	circonus.find_nodes();
-	circonus.on('error', function(err) { console.log(err); cb(err, null); });
-	circonus.on('nodes', function(d1) {
-		cb(null, { nodes: d1 })
-	});
+    circonus.find_nodes();
+    circonus.on('error', function(err) { console.log(err); cb(err, null); });
+    circonus.on('nodes', function(d1) {
+        cb(null, { nodes: d1 })
+    });
 }
 
 if(aws) {
-  async.parallel({
-  	'circonus': sweep_circonus,
-  	'ec2': sweep_aws
-  },
-  function(err, results) {
-  	if(!results.ec2 || !results.circonus) {
-  		console.log("Error retrieving inventories");
-  		process.exit(-1);
-  	}
-    console.log("scan complete. starting updates...");
-  	var updates = circonus.ec2_updates(results.ec2);
-  
-  	async.parallelLimit(updates.addTags, 4, function(err, data) {
-  		console.log("finished tagging: ", err ? err : "done");
-  	});
-  });
+    async.parallel({
+        'circonus': sweep_circonus,
+        'ec2': sweep_aws
+    },
+    function(err, results) {
+        if(!results.ec2 || !results.circonus) {
+            console.log("Error retrieving inventories");
+            process.exit(-1);
+        }
+        console.log("scan complete. starting updates...");
+        var updates = circonus.ec2_updates(results.ec2);
+
+        async.parallelLimit(updates.addTags, 4, function(err, data) {
+            console.log("finished tagging: ", err ? err : "done");
+        });
+    });
 }
 
 if(chef) {
-  sweep_chef(function(a,b) { console.log(util.inspect(b, { depth: 3 })); });
+    sweep_chef(function(a,b) { console.log(util.inspect(b, { depth: 3 })); });
 }
