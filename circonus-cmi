@@ -42,7 +42,14 @@ if(!args.options.circonus || !options[args.options.circonus]) {
     console.log(args.options.circonus + " is not a valid circonus config");
     process.exit(-1);
 }
-var circonus = new tool.circonus(options[args.options.circonus]);
+
+var circonusOpts = options[args.options.circonus];
+if(circonusOpts.protocol === 'http'){
+    console.log('http');
+    circonusOpts.protocol = require('http');
+}
+
+var circonus = new tool.circonus(circonusOpts); 
 
 var aws = null;
 if(args.options.ec2) {
@@ -51,7 +58,9 @@ if(args.options.ec2) {
 
 var chef = null;
 if(args.options.privatechef) {
-    chef = new tool.chef(options[args.options.privatechef]);
+    var opts = options[args.options.privatechef] || {};
+    opts.source = args.options.privatechef;
+    chef = new tool.chef(opts);
 }
 
 function sweep_aws(cb) {
@@ -98,5 +107,18 @@ if(aws) {
 }
 
 if(chef) {
-    sweep_chef(function(a,b) { console.log(util.inspect(b, { depth: 3 })); });
+    async.parallel({
+        'circonus': sweep_circonus,
+        'chef': sweep_chef
+    }, function(err, results){
+        if(!results.circonus || !results.chef){
+            console.log('Error retrieving inventories');
+            process.exit(-1);
+        }
+        console.log('scan complete. starting updates...');
+        updateChecks = circonus.chef_updates(chef);
+        async.parallelLimit(updateChecks, 4, function(err, data){
+            console.log('Finished updates: ', err ? err : 'done');
+        });
+    });
 }
