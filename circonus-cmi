@@ -45,11 +45,10 @@ if(!args.options.circonus || !options[args.options.circonus]) {
 
 var circonusOpts = options[args.options.circonus];
 if(circonusOpts.protocol === 'http'){
-    console.log('http');
     circonusOpts.protocol = require('http');
 }
 
-var circonus = new tool.circonus(circonusOpts); 
+var circonus = new tool.circonus(circonusOpts);
 
 var aws = null;
 if(args.options.ec2) {
@@ -67,7 +66,7 @@ function sweep_aws(cb) {
     aws.find_nodes();
     aws.on('error', function(err) { cb(err, null); });
     aws.on('nodes', function(d1, d2) {
-        cb(null, { ips: d1, instances: d2 })
+        cb(null, { ips: d1, instances: d2 });
     });
 }
 
@@ -83,9 +82,11 @@ function sweep_circonus(cb) {
     circonus.find_nodes();
     circonus.on('error', function(err) { console.log(err); cb(err, null); });
     circonus.on('nodes', function(d1) {
-        cb(null, { nodes: d1 })
+        cb(null, { nodes: d1 });
     });
 }
+
+
 
 if(aws) {
     async.parallel({
@@ -107,18 +108,57 @@ if(aws) {
 }
 
 if(chef) {
+    console.info('Scanning Inventories');
     async.parallel({
         'circonus': sweep_circonus,
-        'chef': sweep_chef
+        'chef': function(cb){
+            if(!chef) return cb();
+            sweep_chef(cb);
+        }
     }, function(err, results){
         if(!results.circonus || !results.chef){
-            console.log('Error retrieving inventories');
+            console.error('Error retrieving all inventories');
             process.exit(-1);
         }
-        console.log('scan complete. starting updates...');
-        updateChecks = circonus.chef_updates(chef);
-        async.parallelLimit(updateChecks, 4, function(err, data){
-            console.log('Finished updates: ', err ? err : 'done');
+
+        console.info('Scan complete. Compiling updates');
+
+        updateChefChecks = circonus.chef_updates(chef);
+
+        console.info('Compiled updates:', updateChefChecks.stats);
+
+        if(updateChefChecks.stats.toBeUpdated + updateChefChecks.stats.toBeAdded === 0){
+            console.info('No work necessary for chef.');
+            return;
+        }
+
+        console.info('Starting updates');
+        async.parallelLimit(updateChefChecks.updates, 4, function(err, data){
+            var stats = {};
+            var failures;
+            for(var i = 0, len = data.length; i < len; i++){
+                var result = data[i];
+                var action = result.action;
+                if(!stats[action]){
+                    stats[action] = {
+                        total: 0,
+                        success: 0,
+                        fail: 0
+                    };
+                }
+                stats[action].total++;
+                if(result.code === 200){
+                    stats[action].success++;
+                } else {
+                    stats[action].fail++;
+                    if(!failures) failures = {};
+                    if(!failures[action]) failures[action] = [];
+                    failures[action].push(result);
+                }
+            }
+            console.info('Finished updates:', stats);
+            if(failures) console.error('Failures:', failures);
         });
+
     });
 }
