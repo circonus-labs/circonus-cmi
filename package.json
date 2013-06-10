@@ -4,6 +4,6 @@
                    , "argv": ">=0.0.0"
                    , "async": ">=0.2.8"
                    , "aws-sdk": ">=0.9.8"
-                   , "circonusapi2": "git://github.com/neophenix/node-circonusapi2.git" }
+                   , "circonusapi2": ">=0.1.3" }
 , "engines" : { "node" : "0.4 || 0.5 || 0.6 || 0.8 || 0.10" }
 }

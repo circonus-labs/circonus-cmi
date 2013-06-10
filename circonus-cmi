@@ -43,12 +43,7 @@ if(!args.options.circonus || !options[args.options.circonus]) {
     process.exit(-1);
 }
 
-var circonusOpts = options[args.options.circonus];
-if(circonusOpts.protocol === 'http'){
-    circonusOpts.protocol = require('http');
-}
-
-var circonus = new tool.circonus(circonusOpts);
+var circonus = new tool.circonus(options[args.options.circonus]);
 
 var aws = null;
 if(args.options.ec2) {
