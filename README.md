@@ -138,11 +138,11 @@ Within a Chef Role or Node, within one of the attribute sections, a "circonus" a
 
 A Ruby-like syntax is used for specifying dynamic substitutions. It begins with `node` and is of the form:
 
-	"node[:foo][:bar]"
+	"#{node[:foo][:bar]}"
 
 This references the compiled attributes after precedence, property foo, subproperty bar. One common case is to specify the target ip for a check dynamically with:
 
-	"target": "node[:ipaddress]"
+	"target": "#{node[:ipaddress]}"
 
 #### Tags
 
