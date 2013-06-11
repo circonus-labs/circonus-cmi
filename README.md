@@ -107,6 +107,9 @@ Example default_attributes JSON:
 				"tagAll1",
 				"tagAll2"
 			],
+			"default_brokers":[
+				"/broker/1"
+			],
 			"checks": {
 				"fooCheck":{
 					"target": "example.com",
@@ -132,7 +135,7 @@ Example default_attributes JSON:
 
 #### General
 
-Within a Chef Role or Node, within one of the attribute sections, a "circonus" attribute should be added to contain information about checks and tags. The precedence rules work the same as any other attribute in chef, so things may be overriden.
+Within a Chef Role or Node, within one of the attribute sections, a "circonus" attribute should be added to contain information about checks and tags. The precedence rules work the same as any other attribute in chef, so things may be overriden. If no brokers are provided for a check, it will use whatever is in default_brokers.
 
 #### Substitution
 
