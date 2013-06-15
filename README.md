@@ -211,3 +211,15 @@ Result
 
 ---
 ## AWS
+
+The AWS integration currently is a tagging tool.  Each Circonus check will be
+reviewed (resolving FQDNs to IP addresses as needed).  Then, each Amazon EC2
+instances in each Amazon EC2 region will be catalogued.  Every check in
+Circonus that has an IP address (including names resolved to IPs) will be
+matched against the EC2 instance inventory.  Each matching check will be
+tagged with the following tags:
+
+ * ec2-region (Amazon EC2 Region)
+ * ec2-zone (Amazon EC2 Availability Zone)
+ * ec2-id (Amazon EC2 Instance Id)
+ * ec2-type (Amazon EC2 Instance Type)
