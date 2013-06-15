@@ -4,6 +4,10 @@
 
 circonus-cmi is a command line tool written in [Node.JS](http://nodejs.org/) to control of [Circonus]() checks based on [Chef Server](http://wiki.opscode.com/display/chef/Home) and [AWS](http://aws.amazon.com/). Support for [Puppet](https://puppetlabs.com/) coming soon.
 
+## License
+
+Modified BSD. See LICENSE.
+
 ## Requirements
 
 * Node.js >= 0.4
