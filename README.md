@@ -57,7 +57,8 @@ For AWS, an access key ID and secret access key will need to be generated. Go to
 circous-cmi uses the [circonusapi2](https://npmjs.org/package/circonusapi2) module. Full configuration options can be found with in the module documentation. An example config:
 
 	{
-		"authtoken": "asdfadsf"
+		"auth_token": "asdfadsf",
+		"app_name": "cmi-tool"
 	}
 
 ### AWS
@@ -65,7 +66,7 @@ circous-cmi uses the [circonusapi2](https://npmjs.org/package/circonusapi2) modu
 circonus-cmi uses the [aws-sdk](https://npmjs.org/package/aws-sdk) module. An AWS access key id and secret access key will be needed. Full configuration options can be found with in the module documentation.  An example config:
 
 	{
-		"accessKeyID": "asdfasdf",
+		"accessKeyId": "asdfasdf",
 		"secretAccessKey": "qwerty",
 		"region": "us-east-1"
 	}
