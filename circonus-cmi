@@ -46,10 +46,10 @@ var argv_config = argv.option([
     short: 'c',
     type: 'string',
     description: 'synchronized with circonus via config section <name>' }
-, { name: 'ec2',
+, { name: 'aws',
     short: 'e',
     type: 'string',
-    description: 'synchronized with ec2 via config section <name>' }
+    description: 'synchronized with aws via config section <name>' }
 , { name: 'privatechef',
     short: 'p',
     type: 'string',
@@ -74,11 +74,29 @@ if(!args.options.circonus || !options[args.options.circonus]) {
     process.exit(-1);
 }
 
-var circonus = new tool.circonus(options[args.options.circonus]);
+if(args.options.aws) {
+    if (!options[args.options.aws].regions) {
+       /* If the user didn't specify regions in the config file,
+        * just use these */
+       options[args.options.aws].regions = {
+            "us-east-1": "https://monitoring.us-east-1.amazonaws.com",
+            "us-west-1": "https://monitoring.us-west-1.amazonaws.com",
+            "us-west-2": "https://monitoring.us-west-2.amazonaws.com",
+            "eu-west-1": "https://monitoring.eu-west-1.amazonaws.com",
+            "ap-southeast-1": "https://monitoring.ap-southeast-1.amazonaws.com",
+            "ap-southeast-2": "https://monitoring.ap-southeast-2.amazonaws.com",
+            "ap-northeast-1": "https://monitoring.ap-northeast-1.amazonaws.com",
+            "sa-east-1": "https://monitoring.sa-east-1.amazonaws.com"
+        }
+    }
+}
+
+var aws_options = options[args.options.aws];
+var circonus = new tool.circonus(options[args.options.circonus], options[args.options.aws]);
 
 var aws = null;
-if(args.options.ec2) {
-    aws = new tool.aws(options[args.options.ec2]);
+if(args.options.aws) {
+    aws = new tool.aws(options[args.options.aws]);
 }
 
 var chef = null;
@@ -88,11 +106,25 @@ if(args.options.privatechef) {
     chef = new tool.chef(opts);
 }
 
-function sweep_aws(cb) {
-    aws.find_nodes();
+function sweep_ec2(cb) {
+    aws.process('ec2');
     aws.on('error', function(err) { cb(err, null); });
-    aws.on('nodes', function(d1, d2) {
-        cb(null, { ips: d1, instances: d2 });
+    aws.on('ec2', function(d1, d2, d3) {
+        cb(null, { ips: d1, instances: d2, data: d3 });
+    });
+}
+function sweep_ebs(cb) {
+    aws.process('ebs');
+    aws.on('error', function(err) { cb(err, null); });
+    aws.on('ebs', function(d1) {
+        cb(null, { data: d1 });
+    });
+}
+function sweep_elb(cb) {
+    aws.process('elb');
+    aws.on('error', function(err) { cb(err, null); });
+    aws.on('elb', function(d1) {
+        cb(null, { data: d1 });
     });
 }
 
@@ -105,30 +137,80 @@ function sweep_chef(cb) {
 }
 
 function sweep_circonus(cb) {
-    circonus.find_nodes();
-    circonus.on('error', function(err) { console.log(err); cb(err, null); });
-    circonus.on('nodes', function(d1) {
-        cb(null, { nodes: d1 });
+    circonus.get_brokers();
+    circonus.on('error', function(err) {console.log(err); cb(err, null); });
+    circonus.on('brokers', function(d1) {
+        circonus.get_checks();
+        circonus.on('error', function(err) {console.log(err); cb(err, null); });
+        circonus.on('checks', function(d1) {
+            circonus.find_nodes();
+            circonus.on('error', function(err) { console.log(err); cb(err, null); });
+            circonus.on('nodes', function(d1, d2) {
+                cb(null, { nodes: d1 });
+            });
+        });
     });
 }
 
 
 
 if(aws) {
-    async.parallel({
-        'circonus': sweep_circonus,
-        'ec2': sweep_aws
-    },
-    function(err, results) {
-        if(!results.ec2 || !results.circonus) {
-            console.log("Error retrieving inventories");
-            process.exit(-1);
+    var params = {};
+    aws.get_regions();
+    aws.on('regions', function() {
+        params.circonus = sweep_circonus;
+        if (aws.options.ec2 === true) {
+            params.ec2 = sweep_ec2;
         }
-        console.log("scan complete. starting updates...");
-        var updates = circonus.ec2_updates(results.ec2);
-
-        async.parallelLimit(updates.addTags, 4, function(err, data) {
-            console.log("finished tagging: ", err ? err : "done");
+        if (aws.options.ebs === true) {
+            params.ebs = sweep_ebs;
+        }
+        if (aws.options.ebs === true) {
+            params.elb = sweep_elb;
+        }
+        async.parallel(params, function(err, results) {
+            if(!results.circonus) {
+                console.log("Error retrieving inventories");
+                process.exit(-1);
+            }
+            console.log("scan complete. starting updates...");
+            if (results.ec2) {
+                var updates = circonus.ec2_updates_tagging(results.ec2);
+                async.parallelLimit(updates.addTags, 4, function(err, data) {
+                    console.log("finished processing ec2 tagging: ", err ? err : "done");
+                });
+            }
+            if (options[args.options.circonus].update_checks === true) {
+                var params = [];
+                if (results.ec2) {
+                    params.push( {
+                        'o': results.ec2,
+                        'namespace': "AWS/EC2",
+                        'short_namespace': "ec2"
+                    });
+                }
+                if (results.ebs) {
+                    params.push( {
+                        'o': results.ebs,
+                        'namespace': "AWS/EBS",
+                        'short_namespace': "ebs"
+                    });
+                }
+                if (results.elb) {
+                    params.push( {
+                        'o': results.elb,
+                        'namespace': "AWS/ELB",
+                        'short_namespace': "elb"
+                    });
+                }
+                /* We want to do these in a series.... simultaneous calls to the Circonus API
+                 * can cause problems */
+                async.eachSeries(params, circonus.do_update.bind(circonus), function(err) {
+                    if (err) {
+                        console.log(err);
+                    }
+                });
+            }
         });
     });
 }
