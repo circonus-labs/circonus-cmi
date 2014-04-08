@@ -127,6 +127,13 @@ function sweep_elb(cb) {
         cb(null, { data: d1 });
     });
 }
+function sweep_rds(cb) {
+    aws.process('rds');
+    aws.on('error', function(err) { cb(err, null); });
+    aws.on('rds', function(d1) {
+        cb(null, { data: d1 });
+    });
+}
 
 function sweep_chef(cb) {
     chef.find_nodes();
@@ -168,6 +175,9 @@ if(aws) {
         if (aws.options.elb === true) {
             params.elb = sweep_elb;
         }
+        if (aws.options.rds === true) {
+            params.rds = sweep_rds;
+        }
         async.parallel(params, function(err, results) {
             if(!results.circonus) {
                 console.log("Error retrieving inventories");
@@ -201,6 +211,13 @@ if(aws) {
                         'o': results.elb,
                         'namespace': "AWS/ELB",
                         'short_namespace': "elb"
+                    });
+                }
+                if (results.rds) {
+                    params.push( {
+                        'o': results.rds,
+                        'namespace': "AWS/RDS",
+                        'short_namespace': "rds"
                     });
                 }
                 /* We want to do these in a series.... simultaneous calls to the Circonus API
