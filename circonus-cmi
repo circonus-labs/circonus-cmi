@@ -165,7 +165,7 @@ if(aws) {
         if (aws.options.ebs === true) {
             params.ebs = sweep_ebs;
         }
-        if (aws.options.ebs === true) {
+        if (aws.options.elb === true) {
             params.elb = sweep_elb;
         }
         async.parallel(params, function(err, results) {
