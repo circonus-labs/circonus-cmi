@@ -89,6 +89,16 @@ if(args.options.aws) {
             "sa-east-1": "https://monitoring.sa-east-1.amazonaws.com"
         }
     }
+    if (!options[args.options.aws].granularity) {
+        options[args.options.aws].granularity = "5";
+    }
+    else {
+        if ((options[args.options.aws].granularity != "1") &&
+            (options[args.options.aws].granularity != "5")) {
+            console.log(args.options.aws + " is not a valid aws config - granularity must be '1' or '5'");
+            process.exit(-1);
+        }
+    }
 }
 
 var aws_options = options[args.options.aws];
