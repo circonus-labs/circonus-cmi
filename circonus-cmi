@@ -236,6 +236,26 @@ if(aws) {
                     if (err) {
                         console.log(err);
                     }
+                    var counts = circonus.get_counts();
+                    if (counts) {
+                        console.log("Cloudwatch Check Results");
+                        console.log("------");
+                        for (var namespace in counts) {
+                            var entry = counts[namespace];
+                            var add_failed = entry.to_add - entry.add;
+                            var update_failed = entry.to_update - entry.update;
+                            var remove_failed = entry.to_remove - entry.remove;
+                            console.log(namespace);
+                            console.log("------");
+                            console.log("Added:         " + entry.add);
+                            console.log("Updated:       " + entry.update);
+                            console.log("Removed:       " + entry.remove);
+                            console.log("Add Failed:    " + add_failed);
+                            console.log("Update Failed: " + update_failed);
+                            console.log("Remove Failed: " + remove_failed);
+                            console.log("___________________\n");
+                        }
+                    }
                 });
             }
         });
