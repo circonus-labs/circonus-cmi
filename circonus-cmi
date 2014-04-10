@@ -176,16 +176,16 @@ if(aws) {
     aws.get_regions();
     aws.on('regions', function() {
         params.circonus = sweep_circonus;
-        if (aws.options.ec2 === true) {
+        if ((aws.options.ec2) && (aws.options.ec2.length > 0)) {
             params.ec2 = sweep_ec2;
         }
-        if (aws.options.ebs === true) {
+        if ((aws.options.ebs) && (aws.options.ebs.length > 0)) {
             params.ebs = sweep_ebs;
         }
-        if (aws.options.elb === true) {
+        if ((aws.options.elb) && (aws.options.elb.length > 0)) {
             params.elb = sweep_elb;
         }
-        if (aws.options.rds === true) {
+        if ((aws.options.rds) && (aws.options.rds.length > 0)) {
             params.rds = sweep_rds;
         }
         async.parallel(params, function(err, results) {
