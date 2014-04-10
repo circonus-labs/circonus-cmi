@@ -200,7 +200,8 @@ if(aws) {
                     console.log("finished processing ec2 tagging: ", err ? err : "done");
                 });
             }
-            if (options[args.options.circonus].update_checks === true) {
+            if ((options[args.options.circonus].cloudwatch) &&
+                (options[args.options.circonus].cloudwatch.update_checks === true)) {
                 var params = [];
                 if (results.ec2) {
                     params.push( {
