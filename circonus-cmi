@@ -92,6 +92,9 @@ if(args.options.aws) {
     if (!options[args.options.aws].granularity) {
         options[args.options.aws].granularity = "5";
     }
+    if (!options[args.options.aws].aws_tag_prefix) {
+        options[args.options.aws].aws_tag_prefix = "aws-tag";
+    }
     else {
         if ((options[args.options.aws].granularity != "1") &&
             (options[args.options.aws].granularity != "5")) {
