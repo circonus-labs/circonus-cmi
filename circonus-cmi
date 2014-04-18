@@ -254,6 +254,7 @@ if(aws) {
                             console.log("Added:         " + entry.add);
                             console.log("Updated:       " + entry.update);
                             console.log("Removed:       " + entry.remove);
+                            console.log("Unchanged:     " + entry.unchanged);
                             console.log("Add Failed:    " + add_failed);
                             console.log("Update Failed: " + update_failed);
                             console.log("Remove Failed: " + remove_failed);
