@@ -119,11 +119,36 @@ if(args.options.privatechef) {
     chef = new tool.chef(opts);
 }
 
-function sweep_ec2(cb) {
-    aws.process('ec2');
+function sweep_autoscaling_only(cb) {
+    aws.process('autoscaling');
     aws.on('error', function(err) { cb(err, null); });
-    aws.on('ec2', function(d1, d2, d3) {
-        cb(null, { ips: d1, instances: d2, data: d3 });
+    aws.on('autoscaling', function(d1) {
+        cb(null, { autoscaling: {
+                     data: d1
+                   },
+                   ec2: {
+                     ips: null, instances: null, data: null
+                   }
+        });
+    });
+}
+
+function sweep_ec2(cb) {
+    aws.process('autoscaling');
+    aws.on('error', function(err) { cb(err, null); });
+    aws.on('autoscaling', function(d1) {
+        var autoscaling_data = d1;
+        aws.process('ec2');
+        aws.on('error', function(err) { cb(err, null); });
+        aws.on('ec2', function(d2, d3, d4) {
+            cb(null, { autoscaling: {
+                       data: autoscaling_data
+                     },
+                     ec2: {
+                       ips: d2, instances: d3, data: d4 
+                     }
+            });
+        });
     });
 }
 function sweep_ebs(cb) {
@@ -182,6 +207,9 @@ if(aws) {
         if ((aws.options.ec2) && (aws.options.ec2.length > 0)) {
             params.ec2 = sweep_ec2;
         }
+        else if ((aws.options.autoscaling) && (aws.options.autoscaling.length > 0)) {
+            params.ec2 = sweep_autoscaling_only;
+        }
         if ((aws.options.ebs) && (aws.options.ebs.length > 0)) {
             params.ebs = sweep_ebs;
         }
@@ -207,11 +235,20 @@ if(aws) {
                 (options[args.options.circonus].cloudwatch.update_checks === true)) {
                 var params = [];
                 if (results.ec2) {
-                    params.push( {
-                        'o': results.ec2,
-                        'namespace': "AWS/EC2",
-                        'short_namespace': "ec2"
-                    });
+                    if ((results.ec2.ec2) && (aws.options.ec2) && (aws.options.ec2.length > 0)) {
+                        params.push( {
+                            'o': results.ec2.ec2,
+                            'namespace': "AWS/EC2",
+                            'short_namespace': "ec2"
+                        });
+                    }
+                    if ((results.ec2.autoscaling) && (aws.options.autoscaling) && (aws.options.autoscaling.length > 0)) {
+                        params.push( {
+                            'o': results.ec2.autoscaling,
+                            'namespace': "AWS/AutoScaling",
+                            'short_namespace': "autoscaling"
+                        });
+                    }
                 }
                 if (results.ebs) {
                     params.push( {
