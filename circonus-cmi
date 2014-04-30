@@ -102,6 +102,9 @@ if(args.options.aws) {
             process.exit(-1);
         }
     }
+    if (!options[args.options.aws].id) {
+        options[args.options.aws].id = "circonus-cmi";
+    }
 }
 
 var aws_options = options[args.options.aws];
