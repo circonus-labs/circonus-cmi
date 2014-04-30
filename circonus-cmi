@@ -229,7 +229,7 @@ if(aws) {
             }
             console.log("scan complete. starting updates...");
             if (results.ec2) {
-                var updates = circonus.ec2_updates_tagging(results.ec2);
+                var updates = circonus.ec2_updates_tagging(results.ec2.ec2);
                 async.parallelLimit(updates.addTags, 4, function(err, data) {
                     console.log("finished processing ec2 tagging: ", err ? err : "done");
                 });
