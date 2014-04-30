@@ -122,20 +122,6 @@ if(args.options.privatechef) {
     chef = new tool.chef(opts);
 }
 
-function sweep_autoscaling_only(cb) {
-    aws.process('autoscaling');
-    aws.on('error', function(err) { cb(err, null); });
-    aws.on('autoscaling', function(d1) {
-        cb(null, { autoscaling: {
-                     data: d1
-                   },
-                   ec2: {
-                     ips: null, instances: null, data: null
-                   }
-        });
-    });
-}
-
 function sweep_ec2(cb) {
     aws.process('autoscaling');
     aws.on('error', function(err) { cb(err, null); });
@@ -207,12 +193,8 @@ if(aws) {
     aws.get_regions();
     aws.on('regions', function() {
         params.circonus = sweep_circonus;
-        if ((aws.options.ec2) && (aws.options.ec2.length > 0)) {
-            params.ec2 = sweep_ec2;
-        }
-        else if ((aws.options.autoscaling) && (aws.options.autoscaling.length > 0)) {
-            params.ec2 = sweep_autoscaling_only;
-        }
+        /* Always sweep EC2, we need it for tagging */
+        params.ec2 = sweep_ec2;
         if ((aws.options.ebs) && (aws.options.ebs.length > 0)) {
             params.ebs = sweep_ebs;
         }
