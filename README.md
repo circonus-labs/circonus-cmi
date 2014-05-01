@@ -372,4 +372,6 @@ An example of a complete configuration across both circonus and aws for check cr
 				"all"
 			]
 		}
-	
+
+Checks will be created for all available regions. The "region" field specified for "aws" will pull the initial data for getting inventory, but then all regions will be polled with relevant checks created.
+
