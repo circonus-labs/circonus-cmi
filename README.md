@@ -58,7 +58,22 @@ circous-cmi uses the [circonusapi2](https://npmjs.org/package/circonusapi2) modu
 
 	{
 		"auth_token": "asdfadsf",
-		"app_name": "cmi-tool"
+		"app_name": "cmi-tool",
+		"cloudwatch": {
+			"update_checks": true,
+			"automated_check_name_addendum": "Automated",
+			"brokers": {
+				"default": "My Broker",
+				"us-east-1": "My Broker",
+				"us-west-1": "My Broker",
+				"us-west-2": "My Broker",
+				"eu-west-1": "My Broker",
+				"ap-southeast-1": "My Broker",
+				"ap-southeast-2": "My Broker",
+				"ap-northeast-1": "My Broker",
+				"sa-east-1": "My Broker",
+			}
+		}
 	}
 
 ### AWS
@@ -68,7 +83,26 @@ circonus-cmi uses the [aws-sdk](https://npmjs.org/package/aws-sdk) module. An AW
 	{
 		"accessKeyId": "asdfasdf",
 		"secretAccessKey": "qwerty",
-		"region": "us-east-1"
+		"region": "us-east-1",
+		"id": "circonus-cmi",
+		"aws_tag_prefix": "aws-tag",
+		"tag_translation_function": "example_translate_tags",
+		"ec2": [
+			"InstanceId",
+			"ImageId"
+		],
+		"elb": [
+			"VolumeId"
+		],
+		"ebs": [
+			"LoadBalancerName"
+		],
+		"rds": [
+			"all"
+		],
+		"autoscaling": [
+			"all"
+		]
 	}
 
 ### Chef
@@ -217,9 +251,121 @@ Result
 ---
 ## AWS
 
-The AWS integration currently is a tagging tool.  Each Circonus check will be reviewed (resolving FQDNs to IP addresses as needed).  Then, each Amazon EC2 instances in each Amazon EC2 region will be catalogued.  Every check in Circonus that has an IP address (including names resolved to IPs) will be matched against the EC2 instance inventory.  Each matching check will be tagged with the following tags:
+The AWS integration contains a tagging tool.  Each Circonus check will be reviewed (resolving FQDNs to IP addresses as needed).  Then, each Amazon EC2 instances in each Amazon EC2 region will be catalogued.  Every check in Circonus that has an IP address (including names resolved to IPs) will be matched against the EC2 instance inventory.  Each matching check will be tagged with the following tags:
 
  * ec2-region (Amazon EC2 Region)
  * ec2-zone (Amazon EC2 Availability Zone)
  * ec2-id (Amazon EC2 Instance Id)
  * ec2-type (Amazon EC2 Instance Type)
+
+## AWS Cloudwatch Check Creation
+
+The Circonus-CMI tool has the ability to create Cloudwatch checks based on the configuration file. At the moment, the following AWS Namespaces are supported:
+
+ * AWS/AutoScaling
+ * AWS/EBS
+ * AWS/EC2
+ * AWS/ELB
+ * AWS/RDS
+ 
+You may specify which dimensions you wish to create checks on in the configuration file. The following dimensions are available for each namespace:
+
+ * autoscaling: AutoScalingGroupName
+ * ebs: VolumeId
+ * ec2: InstanceId, InstanceType, ImageId, AutoScalingGroupName
+ * elb: LoadBalancerName, AvailabilityZone
+ * rds: DBInstanceIdentifier, EngineName, DatabaseClass
+
+Each namespace in the configuration file is represented by dropping the "AWS/" and listing the namespace in lower case ("AWS/EC2" is "ec2", "AWS/ELB" is "elb", etc). You may also specify "all" to get all available dimensions for a namespace, or "none" to remove all existing checks for a namespace. For example, if you wanted to create checks for InstanceId and InstanceType for AWS/EC2 and all available dimensions for AWS/ELB, you would set the following in the AWS config section:
+
+	"ec2": [
+		"InstanceId",
+		"InstanceType"
+	],
+	"elb": [
+		"all"
+	]
+
+The tool will tag each check in Circonus with all AWS tags associated with that namespace, as well as any tags relevant to the check (such as the instance id for an EC2 InstanceId check). These tags will have a namespacing prefix that can be specified in the "aws" section of the config file, specified as "aws_tag_prefix". If this is not specified, the prefix will be "aws_tag".
+
+The field "id" will indicate the ID to put on each created check. For example, if you set an id of "cmi-tool", each check will be tagged "aws-id:cmi-tool". This will tell the tool which checks have been created by the tool. Only checks that are tagged with the given ID will be edited and looked at. If the id is changed, checks created with a previous id will not be looked at.
+
+Circonus treats a ':' character as a separator for tags; therefore, colons can not be included as part of the key for each tags in your AWS instance. By default, circonus-cmi will replace each ':' character in the key with a '`' (backtick) character. However, if you wish to supply your own function to replace these characters, you may do so in the lib/UserDefined.js file. Write your own function here and specify to use it in the config file with the field name "tag_translation_function". For example, if you write a function called "translate_it" and wish to use that instead of the tool's default behavior, set a field of "tag_translation_function": "translate_it" in the config file.
+
+In addition to these aws config changes, you will need to configure the "circonus" section to create these checks. You will need to have a "cloudwatch" section, which contains numerous sub-fields. An example of this can be found above. Under cloudwatch, you will need to set the following things:
+
+ * "update_checks": true (this tells the tool that you wish to create new checks and not just tag existing checks
+ * "automated_check_name_addendum": <name> (this will add an addendum to the name of each check you create... if you leave this out, no addendum will be added and check names will be identical to those created by default in the GUI)
+
+In addition, you will need to specify the brokers you wish to put checks on. You must have a section under "cloudwatch" called "brokers", where you will need to specify a default broker and (optionally) a specific broker for each cloudwatch region. For example:
+
+	"brokers": {
+		"default": "My Broker",
+		"us-east-1": "My Broker",
+		"us-west-1": "My Broker",
+		"us-west-2": "My Broker",
+		"eu-west-1": "My Broker",
+		"ap-southeast-1": "My Broker",
+		"ap-southeast-2": "My Broker",
+		"ap-northeast-1": "My Broker",
+		"sa-east-1": "My Broker",
+	}
+
+The broker name is the display name of your broker, viewable on your "Brokers" GUI page.
+
+In addition to this, you may tag each of your enterprise brokers to match AWS tags. For example, if you have an EC2 instance tagged as follows:
+
+"name:my_ec2_instance"
+
+...you may tag your broker with the same tag. When determining what broker to put the check on, it will look for tags on the brokers that match AWS tags and put the check on the appropriate broker. You must precede the tag on the proker with the appropriate "aws_tag_prefix" value, followed by a dash. For example, if you have set an aws tag prefix of "aws-tag", you would tag your broker as follows:
+
+"aws-tag-name:my_ec2_instance"
+
+An example of a complete configuration across both circonus and aws for check creation would be:
+
+	"circonus":
+		{
+			"auth_token": "asdfadsf",
+			"app_name": "cmi-tool",
+			"cloudwatch": {
+				"update_checks": true,
+				"automated_check_name_addendum": "Automated",
+				"brokers": {
+					"default": "My Broker",
+					"us-east-1": "My Broker",
+					"us-west-1": "My Broker",
+					"us-west-2": "My Broker",
+					"eu-west-1": "My Broker",
+					"ap-southeast-1": "My Broker",
+					"ap-southeast-2": "My Broker",
+					"ap-northeast-1": "My Broker",
+					"sa-east-1": "My Broker",
+				}
+			}
+		},
+	"aws":
+		{
+			"accessKeyId": "asdfasdf",
+			"secretAccessKey": "qwerty",
+			"region": "us-east-1",
+			"id": "circonus-cmi",
+			"aws_tag_prefix": "aws-tag",
+			"tag_translation_function": "example_translate_tags",
+			"ec2": [
+				"InstanceId",
+				"ImageId"
+			],
+			"elb": [
+				"VolumeId"
+			],
+			"ebs": [
+				"LoadBalancerName"
+			],
+			"rds": [
+				"all"
+			],
+			"autoscaling": [
+				"all"
+			]
+		}
+	
