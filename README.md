@@ -87,6 +87,7 @@ circonus-cmi uses the [aws-sdk](https://npmjs.org/package/aws-sdk) module. An AW
 		"id": "circonus-cmi",
 		"aws_tag_prefix": "aws-tag",
 		"tag_translation_function": "example_translate_tags",
+		"granularity": 5,
 		"ec2": [
 			"InstanceId",
 			"ImageId"
@@ -292,6 +293,8 @@ The field "id" will indicate the ID to put on each created check. For example, i
 
 Circonus treats a ':' character as a separator for tags; therefore, colons can not be included as part of the key for each tags in your AWS instance. By default, circonus-cmi will replace each ':' character in the key with a '`' (backtick) character. However, if you wish to supply your own function to replace these characters, you may do so in the lib/UserDefined.js file. Write your own function here and specify to use it in the config file with the field name "tag_translation_function". For example, if you write a function called "translate_it" and wish to use that instead of the tool's default behavior, set a field of "tag_translation_function": "translate_it" in the config file.
 
+The "granularity" AWS field allows you to specify either 1 (for one-minute data granularity) or 5 (for 5-minute data granularity). If not provided, it will default to 5.
+
 In addition to these aws config changes, you will need to configure the "circonus" section to create these checks. You will need to have a "cloudwatch" section, which contains numerous sub-fields. An example of this can be found above. Under cloudwatch, you will need to set the following things:
 
  * "update_checks": true (this tells the tool that you wish to create new checks and not just tag existing checks
@@ -351,6 +354,7 @@ An example of a complete configuration across both circonus and aws for check cr
 			"id": "circonus-cmi",
 			"aws_tag_prefix": "aws-tag",
 			"tag_translation_function": "example_translate_tags",
+			"granularity": 5, 
 			"ec2": [
 				"InstanceId",
 				"ImageId"
