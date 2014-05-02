@@ -88,6 +88,9 @@ circonus-cmi uses the [aws-sdk](https://npmjs.org/package/aws-sdk) module. An AW
 		"aws_tag_prefix": "aws-tag",
 		"tag_translation_function": "example_translate_tags",
 		"granularity": 5,
+		"cloudwatch_check_regions": [
+			"all",
+		],
 		"ec2": [
 			"InstanceId",
 			"ImageId"
@@ -295,6 +298,8 @@ Circonus treats a ':' character as a separator for tags; therefore, colons can n
 
 The "granularity" AWS field allows you to specify either 1 (for one-minute data granularity) or 5 (for 5-minute data granularity). If not provided, it will default to 5.
 
+The "cloudwatch_check_regions" field allows you to enter an array of regions you wish to pull data for. A complete list of these regions is listed in the example below. If you wish to pull all regions, you may enter an array with a value of "all" or simply omit the field, which will default to pulling data for all regions.
+
 In addition to these aws config changes, you will need to configure the "circonus" section to create these checks. You will need to have a "cloudwatch" section, which contains numerous sub-fields. An example of this can be found above. Under cloudwatch, you will need to set the following things:
 
  * "update_checks": true (this tells the tool that you wish to create new checks and not just tag existing checks
@@ -354,7 +359,17 @@ An example of a complete configuration across both circonus and aws for check cr
 			"id": "circonus-cmi",
 			"aws_tag_prefix": "aws-tag",
 			"tag_translation_function": "example_translate_tags",
-			"granularity": 5, 
+			"granularity": 5,
+			"cloudwatch_check_regions": [
+				"us-east-1",
+				"us-west-1",
+				"us-west-2",
+				"eu-west-1",
+				"ap-southeast-1",
+				"ap-southeast-2",
+				"ap-northeast-1",
+				"sa-east-1"
+			],
 			"ec2": [
 				"InstanceId",
 				"ImageId"

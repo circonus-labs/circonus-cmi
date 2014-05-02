@@ -105,6 +105,15 @@ if(args.options.aws) {
     if (!options[args.options.aws].id) {
         options[args.options.aws].id = "circonus-cmi";
     }
+    if (!options[args.options.aws].cloudwatch_check_regions) {
+        options[args.options.aws].cloudwatch_check_regions = ["all"];
+    }
+    else {
+        if (!(options[args.options.aws].cloudwatch_check_regions instanceof Array)) {
+            console.log("aws.cloudwatch_check_regions in config file must be an array");
+            process.exit(-1);
+        }
+    }
 }
 
 var aws_options = options[args.options.aws];
