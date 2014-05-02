@@ -89,11 +89,11 @@ if(args.options.aws) {
             "sa-east-1": "https://monitoring.sa-east-1.amazonaws.com"
         }
     }
-    if (!options[args.options.aws].granularity) {
-        options[args.options.aws].granularity = "5";
-    }
     if (!options[args.options.aws].aws_tag_prefix) {
         options[args.options.aws].aws_tag_prefix = "aws-tag";
+    }
+    if (!options[args.options.aws].granularity) {
+        options[args.options.aws].granularity = "5";
     }
     else {
         if ((options[args.options.aws].granularity != "1") &&
