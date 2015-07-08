@@ -72,7 +72,7 @@ circous-cmi uses the [circonusapi2](https://npmjs.org/package/circonusapi2) modu
 				"ap-southeast-1": "My Broker",
 				"ap-southeast-2": "My Broker",
 				"ap-northeast-1": "My Broker",
-				"sa-east-1": "My Broker",
+				"sa-east-1": "My Broker"
 			}
 		}
 	}
@@ -90,7 +90,7 @@ circonus-cmi uses the [aws-sdk](https://npmjs.org/package/aws-sdk) module. An AW
 		"tag_translation_function": "example_translate_tags",
 		"granularity": 5,
 		"cloudwatch_check_regions": [
-			"all",
+			"all"
 		],
 		"ec2": [
 			"InstanceId",
@@ -117,7 +117,7 @@ circonus-cmi uses the [chef-api](https://npmjs.org/package/chef-api) module. Ful
 	{
 		"client_name": "foo",
 		"key_path": "foo.pem",
-		"url": "https://chef.example.com/organizations/foobar"
+		"url": "https://chef.example.com/organizations/foobar",
 		"ca": null
 	}
 
@@ -230,7 +230,7 @@ Chef
 
 	"tags": [
 		"!/foo/",
-		"foobaz",
+		"foobaz"
 	],
 	"metrics": [
 		"!/count/",
@@ -318,7 +318,7 @@ In addition, you will need to specify the brokers you wish to put checks on. You
 		"ap-southeast-1": "My Broker",
 		"ap-southeast-2": "My Broker",
 		"ap-northeast-1": "My Broker",
-		"sa-east-1": "My Broker",
+		"sa-east-1": "My Broker"
 	}
 
 The broker name is the display name of your broker, viewable on your "Brokers" GUI page.
@@ -350,7 +350,7 @@ An example of a complete configuration across both circonus and aws for check cr
 					"ap-southeast-1": "My Broker",
 					"ap-southeast-2": "My Broker",
 					"ap-northeast-1": "My Broker",
-					"sa-east-1": "My Broker",
+					"sa-east-1": "My Broker"
 				}
 			}
 		},
